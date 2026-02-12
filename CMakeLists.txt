@@ -5,7 +5,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/autogen)
 add_custom_target(autogen ALL
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/autogen
   COMMAND ${CMAKE_COMMAND} -E echo "Running autogen.sh..."
-  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen /bin/sh ${CMAKE_SOURCE_DIR}/autogen.sh --prefix=${CMAKE_INSTALL_PREFIX}
+  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen /bin/sh ${CMAKE_SOURCE_DIR}/autogen.sh --prefix=${CMAKE_INSTALL_PREFIX} --enable-bindings-cxx
   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen make
   VERBATIM
 )
