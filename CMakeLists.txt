@@ -1,12 +1,22 @@
-cmake_minimum_required(VERSION 3.10)
-project(libgpiod_autogen NONE)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/autogen)
-add_custom_target(autogen ALL
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/autogen
-  COMMAND ${CMAKE_COMMAND} -E echo "Running autogen.sh..."
-  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen /bin/sh ${CMAKE_SOURCE_DIR}/autogen.sh --prefix=${CMAKE_INSTALL_PREFIX} --enable-bindings-cxx --enable-static=no --build=${CMAKE_SYSTEM_PROCESSOR} --host=x86_64-linux-gnu
-  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen make
-  VERBATIM
+CMAKE_MINIMUM_REQUIRED(VERSION 3.25 FATAL_ERROR)
+PROJECT(libgpiod C CXX)
+
+SET(CMAKE_CXX_STANDARD 17)
+
+FILE(GLOB gpiod_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/*.c")
+ADD_LIBRARY(gpiod SHARED ${gpiod_sources})
+TARGET_INCLUDE_DIRECTORIES(gpiod
+    PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib
+            ${CMAKE_CURRENT_SOURCE_DIR}/lib/uapi
 )
 
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/autogen make install)")
+FILE(GLOB gpiodcxx_sources "${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx/*.cpp")
+ADD_LIBRARY(gpiodcxx SHARED ${gpiodcxx_sources})
+TARGET_INCLUDE_DIRECTORIES(gpiodcxx
+    PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx>
+            $<INSTALL_INTERFACE:include>
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx
+)
+TARGET_LINK_LIBRARIES(gpiodcxx PUBLIC gpiod)
