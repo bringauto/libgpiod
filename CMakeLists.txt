@@ -3,21 +3,62 @@ PROJECT(libgpiod C CXX)
 
 SET(CMAKE_CXX_STANDARD 17)
 
+FILE(STRINGS "${CMAKE_CURRENT_LIST_DIR}/version.txt" _version_line REGEX "^version=")
+STRING(REGEX REPLACE "^version=" "" gpiod_version "${_version_line}")
+
+INCLUDE(GNUInstallDirs)
+INCLUDE(CMakePackageConfigHelpers)
+
 FILE(GLOB gpiod_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/*.c")
 ADD_LIBRARY(gpiod SHARED ${gpiod_sources})
 TARGET_INCLUDE_DIRECTORIES(gpiod
     PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<INSTALL_INTERFACE:include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib
             ${CMAKE_CURRENT_SOURCE_DIR}/lib/uapi
 )
-TARGET_COMPILE_DEFINITIONS(gpiod PRIVATE _GNU_SOURCE GPIOD_VERSION_STR="2.2.2")
+TARGET_COMPILE_DEFINITIONS(gpiod PRIVATE _GNU_SOURCE GPIOD_VERSION_STR="${gpiod_version}")
 
 FILE(GLOB gpiodcxx_sources "${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx/*.cpp")
 ADD_LIBRARY(gpiodcxx SHARED ${gpiodcxx_sources})
 TARGET_INCLUDE_DIRECTORIES(gpiodcxx
     PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx>
-            $<INSTALL_INTERFACE:include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx
 )
 TARGET_LINK_LIBRARIES(gpiodcxx PUBLIC gpiod)
+
+INSTALL(TARGETS gpiod gpiodcxx
+    EXPORT      gpiodTargets
+    LIBRARY     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+INSTALL(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/gpiod.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx/gpiod.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx/internal.hpp"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bindings/cxx/gpiodcxx"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.hpp"
+)
+
+INSTALL(EXPORT gpiodTargets
+    NAMESPACE   gpiod::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gpiod
+)
+CONFIGURE_PACKAGE_CONFIG_FILE(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gpiodConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpiodConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gpiod
+)
+WRITE_BASIC_PACKAGE_VERSION_FILE(
+    "${CMAKE_CURRENT_BINARY_DIR}/gpiodConfigVersion.cmake"
+    VERSION         ${gpiod_version}
+    COMPATIBILITY   AnyNewerVersion
+)
+INSTALL(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/gpiodConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpiodConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gpiod
+)
